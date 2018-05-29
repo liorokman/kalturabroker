@@ -3,19 +3,26 @@ package main
 import (
 	"code.cloudfoundry.org/lager"
 	"context"
+	"encoding/json"
+	"errors"
 	"github.com/goji/httpauth"
 	"github.com/gorilla/mux"
 	"github.com/pivotal-cf/brokerapi"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 )
 
 type KalturaBroker struct {
+	ProvisionedInstances map[string]KalturaPartnerProvision
 }
 
 func NewKalturaBroker() *KalturaBroker {
-	broker := &KalturaBroker{}
+	broker := &KalturaBroker{
+		ProvisionedInstances: make(map[string]KalturaPartnerProvision),
+	}
 	return broker
 }
 
@@ -61,24 +68,72 @@ func (b *KalturaBroker) getXuaaToken(xuaaTenantOnBoardingUserName, xuaaTenantOnB
 */
 
 type ProvisionParameters struct {
-	Email string `json:"email"`
+	Name    string `json:"name"`
+	Company string `json:"company"`
+	Email   string `json:"email"`
+}
+
+type KalturaPartnerProvision struct {
+	Id          int    `json:"id"`
+	AdminSecret string `json:"adminSecret"`
 }
 
 func (b *KalturaBroker) Provision(ctx context.Context, instanceID string, details brokerapi.ProvisionDetails, asyncAllowed bool) (brokerapi.ProvisionedServiceSpec, error) {
-	log.Printf("Got a request to provision a %v for instanceId: %v\n", details, instanceID)
-	retval := brokerapi.ProvisionedServiceSpec{}
+	log.Printf("Got a request to provision instanceId: %v\n", instanceID)
+	retval := brokerapi.ProvisionedServiceSpec{
+		DashboardURL: "https://kmc.kaltura.com/index.php/kmcng/login",
+	}
+
+	var params ProvisionParameters
+	err := json.Unmarshal(details.RawParameters, &params)
+	if err != nil {
+		return retval, err
+	}
+	if params.Company == "" || params.Email == "" || params.Name == "" {
+		return retval, errors.New("Missing parameters")
+	}
+	values := url.Values{}
+	values.Add("partner[objectType]", "KalturaPartner")
+	values.Add("partner[description]", "SAP Cloud Platform provisioned")
+	values.Add("partner[name]", params.Company)
+	values.Add("partner[adminName]", params.Name)
+	values.Add("partner[email]", params.Email)
+	values.Add("partner[referenceId]", instanceID)
+	values.Add("format", "1")
+	resp, err := http.PostForm("https://www.kaltura.com/api_v3/service/partner/action/register", values)
+	if err != nil {
+		return retval, err
+	}
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	var kalturaResponse KalturaPartnerProvision
+	err = json.Unmarshal(body, &kalturaResponse)
+	if err != nil {
+		return retval, err
+	}
+	log.Printf("Received a return value of %v\n", kalturaResponse)
+	b.ProvisionedInstances[instanceID] = kalturaResponse
 
 	return retval, nil
 }
+
 func (b *KalturaBroker) Deprovision(ctx context.Context, instanceID string, details brokerapi.DeprovisionDetails, asyncAllowed bool) (brokerapi.DeprovisionServiceSpec, error) {
 	log.Printf("Got a request to deprovision a %v for instanceId: %v\n", details, instanceID)
 	return brokerapi.DeprovisionServiceSpec{}, nil
 }
 
-func (b KalturaBroker) Bind(ctx context.Context, instanceID, bindingID string, details brokerapi.BindDetails) (brokerapi.Binding, error) {
+func (b *KalturaBroker) Bind(ctx context.Context, instanceID, bindingID string, details brokerapi.BindDetails) (brokerapi.Binding, error) {
 	log.Printf("Got a request to bind bindingId %v for instanceId: %v\n", bindingID, instanceID)
+	resp, ok := b.ProvisionedInstances[instanceID]
+	if !ok {
+		return brokerapi.Binding{}, errors.New("No such instance")
+	}
 	return brokerapi.Binding{
-		Credentials: map[string]interface{}{},
+		Credentials: map[string]interface{}{
+			"adminSecret": resp.AdminSecret,
+			"partnerId":   resp.Id,
+		},
 	}, nil
 }
 
