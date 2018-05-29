@@ -19,7 +19,7 @@ func NewKalturaBroker() *KalturaBroker {
 	return broker
 }
 
-func (b *KalturaBroker) Services(ctx context.Context) []brokerapi.Service {
+func (b *KalturaBroker) Services(ctx context.Context) ([]brokerapi.Service, error) {
 	log.Printf("Got a request to retrieve the catalog")
 
 	return []brokerapi.Service{
@@ -34,7 +34,7 @@ func (b *KalturaBroker) Services(ctx context.Context) []brokerapi.Service {
 				Description: "Kaltura Plan",
 			}},
 		},
-	}
+	}, nil
 }
 
 /*
