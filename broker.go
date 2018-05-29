@@ -107,6 +107,8 @@ func (b *KalturaBroker) Provision(ctx context.Context, instanceID string, detail
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
 
+	log.Printf("Received a return value of %s\n", string(body))
+
 	var kalturaResponse KalturaPartnerProvision
 	err = json.Unmarshal(body, &kalturaResponse)
 	if err != nil {
