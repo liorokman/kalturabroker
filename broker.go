@@ -76,6 +76,9 @@ type ProvisionParameters struct {
 type KalturaPartnerProvision struct {
 	Id          int    `json:"id"`
 	AdminSecret string `json:"adminSecret"`
+
+	ObjectType   string `json:"objectType"`
+	ErrorMessage string `json:"message"`
 }
 
 func (b *KalturaBroker) Provision(ctx context.Context, instanceID string, details brokerapi.ProvisionDetails, asyncAllowed bool) (brokerapi.ProvisionedServiceSpec, error) {
@@ -113,6 +116,9 @@ func (b *KalturaBroker) Provision(ctx context.Context, instanceID string, detail
 	err = json.Unmarshal(body, &kalturaResponse)
 	if err != nil {
 		return retval, err
+	}
+	if kalturaResponse.ObjectType == "KalturaAPIException" {
+		return retval, errors.New(kalturaResponse.ErrorMessage)
 	}
 	log.Printf("Received a return value of %v\n", kalturaResponse)
 	b.ProvisionedInstances[instanceID] = kalturaResponse
