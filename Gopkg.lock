@@ -26,20 +26,23 @@
   version = "v1.6.2"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/liorokman/brokerapi"
-  packages = ["."]
-  revision = "e8c333a290e6eafcb17c1aed581f498e57c30845"
+  branch = "arbitrary_params"
+  name = "github.com/pivotal-cf/brokerapi"
+  packages = [
+    ".",
+    "auth"
+  ]
+  revision = "master"
 
 [[projects]]
-  name = "github.com/pivotal-cf/brokerapi"
-  packages = ["auth"]
-  revision = "30e0c68f20b6560bb99f7c0b6019db2652816d3f"
-  version = "v2.0.2"
+  branch = "fix-large-token"
+  name = "github.com/pivotal-golang/lager"
+  packages = ["."]
+  revision = "ce912f1f6e007e955045546229ae42ba5ac66fa7"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "99d5d1846025d7f23961de9924c4fff5c86b1f212c43ff9cfb3dabdf39ae09b4"
+  inputs-digest = "6b3cda2741c602f72486b80da9af2f5fbeddafe2f85cac50051a25e2d8b984fb"
   solver-name = "gps-cdcl"
   solver-version = 1
