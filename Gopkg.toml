@@ -24,6 +24,10 @@
 #   go-tests = true
 #   unused-packages = true
 
+[[constraint]]
+  name = "github.com/pivotal-cf/brokerapi"
+  branch = "master"
+
 
 [prune]
   go-tests = true

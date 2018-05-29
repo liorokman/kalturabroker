@@ -5,8 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/cloudfoundry-community/go-cfenv"
 	"github.com/goji/httpauth"
 	"github.com/gorilla/mux"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/pivotal-cf/brokerapi"
 	"io/ioutil"
 	"log"
@@ -15,13 +19,27 @@ import (
 	"os"
 )
 
+type KalturaInstances struct {
+	Id          string `gorm:"primary_key;unique;not null"`
+	PartnerId   int    `gorm:"not null"`
+	AdminSecret string `gorm:"not null"`
+}
+
 type KalturaBroker struct {
-	ProvisionedInstances map[string]KalturaPartnerProvision
+	db *gorm.DB
 }
 
 func NewKalturaBroker() *KalturaBroker {
+	db, err := gorm.Open("postgres", getDBParameters())
+	if err != nil {
+		panic(fmt.Sprintf("Failed to connect to the database: %v\n", err))
+	}
+
+	// Migrate the schema
+	db.AutoMigrate(&KalturaInstances{})
+
 	broker := &KalturaBroker{
-		ProvisionedInstances: make(map[string]KalturaPartnerProvision),
+		db: db,
 	}
 	return broker
 }
@@ -40,11 +58,11 @@ func (b *KalturaBroker) Services(ctx context.Context) ([]brokerapi.Service, erro
 				ImageUrl:    "https://vpaas.kaltura.com/images/VPaaS-logo-full.png",
 				LongDescription: `
 Kaltura VPaaS (Video Platform as a Service) allows you to build any video experience or workflow, and to integrate rich video experiences into existing applications, business workflows and environments.
-Kaltura VPaaS eliminates all complexities involved in handling video at scale: ingestion, transcoding, metadata, playback, distribution, analytics, accessibility, monetization, security, search, interactivity and more. 
+Kaltura VPaaS eliminates all complexities involved in handling video at scale: ingestion, transcoding, metadata, playback, distribution, analytics, accessibility, monetization, security, search, interactivity and more.
 Available as an open API, with a set of SDKs, developer tools and dozens of code recipes, we’re making the video experience creation process as easy as it gets.`,
 				ProviderDisplayName: "Kaltura Inc.",
 				DocumentationUrl:    "https://developer.kaltura.com",
-				SupportUrl: "https://forum.kaltura.org",
+				SupportUrl:          "https://forum.kaltura.org",
 			},
 			Plans: []brokerapi.ServicePlan{brokerapi.ServicePlan{
 				ID:          "7a5ab921-e501-409e-917b-4cb4aa87a782",
@@ -54,29 +72,6 @@ Available as an open API, with a set of SDKs, developer tools and dozens of code
 		},
 	}, nil
 }
-
-/*
-func (b *KalturaBroker) getXuaaToken(xuaaTenantOnBoardingUserName, xuaaTenantOnBoardingPassword string) (string, error) {
-	payload := strings.NewReader("grant_type=password&username=" + url.QueryEscape(xuaaTenantOnBoardingUserName) + "&password=" + url.QueryEscape(xuaaTenantOnBoardingPassword) + "&scope=")
-	req, _ := http.NewRequest("POST", b.UaaTokenEndpoint+"/oauth/token", payload)
-	req.Header.Add("authorization", "Basic eHVhYTo=")
-	req.Header.Add("content-type", "application/x-www-form-urlencoded")
-	req.Header.Add("cache-control", "no-cache")
-
-	res, _ := http.DefaultClient.Do(req)
-
-	defer res.Body.Close()
-	body, _ := ioutil.ReadAll(res.Body)
-
-	tokenResponse := GetXuaaTokenResponse{}
-	err := json.Unmarshal(body, &tokenResponse)
-	if err != nil {
-		return "", err
-	}
-	return tokenResponse.AccessToken, nil
-}
-
-*/
 
 type ProvisionParameters struct {
 	Name    string `json:"name"`
@@ -132,26 +127,39 @@ func (b *KalturaBroker) Provision(ctx context.Context, instanceID string, detail
 		return retval, errors.New(kalturaResponse.ErrorMessage)
 	}
 	log.Printf("Received a return value of %v\n", kalturaResponse)
-	b.ProvisionedInstances[instanceID] = kalturaResponse
+
+	// Create
+	b.db.Create(&KalturaInstances{
+		Id:          instanceID,
+		PartnerId:   kalturaResponse.Id,
+		AdminSecret: kalturaResponse.AdminSecret,
+	})
 
 	return retval, nil
 }
 
 func (b *KalturaBroker) Deprovision(ctx context.Context, instanceID string, details brokerapi.DeprovisionDetails, asyncAllowed bool) (brokerapi.DeprovisionServiceSpec, error) {
 	log.Printf("Got a request to deprovision a %v for instanceId: %v\n", details, instanceID)
+	var record KalturaInstances
+	b.db.First(&record, "Id = ?", instanceID)
+	if record.Id == "" {
+		return brokerapi.DeprovisionServiceSpec{}, errors.New("No such instance")
+	}
+	b.db.Delete(&record)
 	return brokerapi.DeprovisionServiceSpec{}, nil
 }
 
 func (b *KalturaBroker) Bind(ctx context.Context, instanceID, bindingID string, details brokerapi.BindDetails) (brokerapi.Binding, error) {
 	log.Printf("Got a request to bind bindingId %v for instanceId: %v\n", bindingID, instanceID)
-	resp, ok := b.ProvisionedInstances[instanceID]
-	if !ok {
+	var record KalturaInstances
+	b.db.First(&record, "Id = ?", instanceID)
+	if record.Id == "" {
 		return brokerapi.Binding{}, errors.New("No such instance")
 	}
 	return brokerapi.Binding{
 		Credentials: map[string]interface{}{
-			"adminSecret": resp.AdminSecret,
-			"partnerId":   resp.Id,
+			"adminSecret": record.AdminSecret,
+			"partnerId":   record.PartnerId,
 		},
 	}, nil
 }
@@ -169,7 +177,30 @@ func (b *KalturaBroker) LastOperation(ctx context.Context, instanceID, operation
 	return brokerapi.LastOperation{}, nil
 }
 
+func getDBParameters() string {
+
+	appEnv, err := cfenv.Current()
+	if err != nil {
+		panic(err)
+	}
+	pgServices, err := appEnv.Services.WithLabel("postgresql")
+	if err != nil {
+		panic(err)
+	}
+	if len(pgServices) != 1 {
+		panic("Can't find the database")
+	}
+	return fmt.Sprint("host=%s port=%s user=%s dbname=%s password=%s",
+		pgServices[0].Credentials["hostname"],
+		pgServices[0].Credentials["port"],
+		pgServices[0].Credentials["username"],
+		pgServices[0].Credentials["dbname"],
+		pgServices[0].Credentials["password"],
+	)
+}
+
 func main() {
+
 	router := mux.NewRouter().StrictSlash(true)
 	brokerLogger := lager.NewLogger("broker")
 	KalturaBroker := NewKalturaBroker()
