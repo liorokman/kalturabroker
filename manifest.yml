@@ -4,3 +4,5 @@ applications:
   memory: 128M
   env:
     GOPACKAGENAME: "github.com/liorokman/kalturabroker"
+  services:
+  - postgresql
