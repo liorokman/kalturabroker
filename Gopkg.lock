@@ -8,6 +8,12 @@
   revision = "b60e04e119450552243196105bae0d42179ee0ca"
 
 [[projects]]
+  name = "github.com/cloudfoundry-community/go-cfenv"
+  packages = ["."]
+  revision = "f920e9562d5f951cbf11785728f67258c38a10d0"
+  version = "v1.17.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/goji/httpauth"
   packages = ["."]
@@ -51,6 +57,12 @@
   revision = "90697d60dd844d5ef6ff15135d0203f65d2f53b8"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/mitchellh/mapstructure"
+  packages = ["."]
+  revision = "bb74f1db0675b241733089d5a1faa5dd8b0ef57b"
+
+[[projects]]
   name = "github.com/pivotal-cf/brokerapi"
   packages = [
     ".",
@@ -62,6 +74,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2cbebf9a63819b19cdb85c8e48321aad3456b2c6206d4f303062c53e9517f36c"
+  inputs-digest = "9b67e0f8bd832cee71a34cfacd26165c67e8ad41acccb231e5382f0d76b5bcba"
   solver-name = "gps-cdcl"
   solver-version = 1

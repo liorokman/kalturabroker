@@ -44,6 +44,14 @@ func NewKalturaBroker() *KalturaBroker {
 	return broker
 }
 
+func (b *KalturaBroker) Close() {
+	if b.db != nil {
+		db := b.db
+		b.db = nil
+		db.Close()
+	}
+}
+
 func (b *KalturaBroker) Services(ctx context.Context) ([]brokerapi.Service, error) {
 	log.Printf("Got a request to retrieve the catalog")
 
@@ -204,6 +212,7 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	brokerLogger := lager.NewLogger("broker")
 	KalturaBroker := NewKalturaBroker()
+	defer KalturaBroker.Close()
 
 	brokerUser := os.Getenv("BROKER_USER")
 	brokerPass := os.Getenv("BROKER_PASS")
