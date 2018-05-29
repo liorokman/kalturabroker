@@ -3,9 +3,9 @@ package main
 import (
 	"code.cloudfoundry.org/lager"
 	"context"
-	"github.com/cf-pivotal/brokerapi"
 	"github.com/goji/httpauth"
 	"github.com/gorilla/mux"
+	"github.com/pivotal-cf/brokerapi"
 	"log"
 	"net/http"
 	"os"
