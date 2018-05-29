@@ -97,7 +97,7 @@ func (b *KalturaBroker) Provision(ctx context.Context, instanceID string, detail
 	values.Add("partner[description]", "SAP Cloud Platform provisioned")
 	values.Add("partner[name]", params.Company)
 	values.Add("partner[adminName]", params.Name)
-	values.Add("partner[email]", params.Email)
+	values.Add("partner[adminEmail]", params.Email)
 	values.Add("partner[referenceId]", instanceID)
 	values.Add("format", "1")
 	resp, err := http.PostForm("https://www.kaltura.com/api_v3/service/partner/action/register", values)
