@@ -190,7 +190,7 @@ func getDBParameters() string {
 	if len(pgServices) != 1 {
 		panic("Can't find the database")
 	}
-	return fmt.Sprint("host=%s port=%s user=%s dbname=%s password=%s",
+	return fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s",
 		pgServices[0].Credentials["hostname"],
 		pgServices[0].Credentials["port"],
 		pgServices[0].Credentials["username"],
