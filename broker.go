@@ -33,7 +33,7 @@ func (b *KalturaBroker) Services(ctx context.Context) ([]brokerapi.Service, erro
 		brokerapi.Service{
 			ID:          "5d9bd115-1b05-4f33-920e-ae9c442c0346",
 			Name:        "kaltura",
-			Description: "Create Kaltura account",
+			Description: "Use Kaltura to create Video Experiences and Workflows in your application",
 			Bindable:    true,
 			Metadata: &brokerapi.ServiceMetadata{
 				DisplayName: "kaltura Video Platform as a Service",
