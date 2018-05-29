@@ -1,15 +1,14 @@
 package main
 
 import (
-	"context"
-	"github.com/goji/httpauth"
-	"os"
-
 	"code.cloudfoundry.org/lager"
+	"context"
+	"github.com/cf-pivotal/brokerapi"
+	"github.com/goji/httpauth"
 	"github.com/gorilla/mux"
-	"github.com/liorokman/brokerapi"
 	"log"
 	"net/http"
+	"os"
 )
 
 type KalturaBroker struct {
@@ -21,84 +20,19 @@ func NewKalturaBroker() *KalturaBroker {
 }
 
 func (b *KalturaBroker) Services(ctx context.Context) []brokerapi.Service {
-	bindingParams := map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"name": map[string]interface{}{
-				"type":        "string",
-				"description": "Human readable name of the remote service being exposed",
-				"title":       "Name",
-			},
-			"id": map[string]interface{}{
-				"type":        "string",
-				"description": "Remote GUID of the service being exposed/unexposed",
-				"title":       "GUID",
-			},
-			"credentials": map[string]interface{}{
-				"type":        "object",
-				"description": "Opaque JSON document with credentials to be given to binding instances for this service",
-				"title":       "Credentials",
-			},
-			"description": map[string]interface{}{
-				"type":        "string",
-				"description": "Description of the service being exposed",
-				"title":       "Description",
-			},
-		},
-		"required": []string{"id", "name", "description"},
-	}
 	log.Printf("Got a request to retrieve the catalog")
-	planList := []brokerapi.ServicePlan{brokerapi.ServicePlan{
-		ID:          "an id",
-		Name:        "small-org",
-		Description: "Creates a Small CF Org in CloudFoundry",
-		Schemas: &brokerapi.ServiceSchemas{
-			Instance: brokerapi.ServiceInstanceSchema{
-				Create: brokerapi.Schema{
-					Schema: map[string]interface{}{
-						"$schema": "http://json-schema.org/draft-06/schema#",
-						"type":    "object",
-						"properties": map[string]interface{}{
-							"email": map[string]interface{}{
-								"type":        "string",
-								"title":       "User Email",
-								"description": "The email of the user that already exists in SAP IDP that will be added as an org manager in the created org",
-								"default":     "${admin_email}",
-							},
-						},
-						"required": []string{"email"},
-					},
-				},
-				Update: brokerapi.Schema{
-					Schema: map[string]interface{}{
-						"$schema": "http://json-schema.org/draft-06/schema#",
-						"type":    "object",
-						"properties": map[string]interface{}{
-							"del_bindings": map[string]interface{}{
-								"type":  "array",
-								"title": "Deleted bindings",
-								"items": bindingParams,
-							},
-							"add_bindings": map[string]interface{}{
-								"type":  "array",
-								"title": "Added bindings",
-								"items": bindingParams,
-							},
-						},
-					},
-				},
-			},
-		},
-	}}
 
 	return []brokerapi.Service{
 		brokerapi.Service{
-			ID:          "another id",
-			Name:        "CF Org",
-			Description: "Create an Org in CF",
-			Bindable:    false,
-			Metadata:    map[string]interface{}{},
-			Plans:       planList,
+			ID:          "5d9bd115-1b05-4f33-920e-ae9c442c0346",
+			Name:        "Kaltura",
+			Description: "Create Kaltura account",
+			Bindable:    true,
+			Plans: []brokerapi.ServicePlan{brokerapi.ServicePlan{
+				ID:          "7a5ab921-e501-409e-917b-4cb4aa87a782",
+				Name:        "default",
+				Description: "Kaltura Plan",
+			}},
 		},
 	}
 }
@@ -125,6 +59,7 @@ func (b *KalturaBroker) getXuaaToken(xuaaTenantOnBoardingUserName, xuaaTenantOnB
 }
 
 */
+
 type ProvisionParameters struct {
 	Email string `json:"email"`
 }
@@ -161,10 +96,10 @@ func (b *KalturaBroker) LastOperation(ctx context.Context, instanceID, operation
 }
 
 func main() {
-
 	router := mux.NewRouter().StrictSlash(true)
 	brokerLogger := lager.NewLogger("broker")
 	KalturaBroker := NewKalturaBroker()
+
 	router.Use(httpauth.SimpleBasicAuth("user", "pass"))
 	brokerapi.AttachRoutes(router, KalturaBroker, brokerLogger)
 
