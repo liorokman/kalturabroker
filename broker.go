@@ -36,18 +36,20 @@ func (b *KalturaBroker) Services(ctx context.Context) ([]brokerapi.Service, erro
 			Description: "Create Kaltura account",
 			Bindable:    true,
 			Metadata: &brokerapi.ServiceMetadata{
-				DisplayName: "some name",
+				DisplayName: "kaltura Video Platform as a Service",
 				ImageUrl:    "https://vpaas.kaltura.com/images/VPaaS-logo-full.png",
 				LongDescription: `
 Kaltura VPaaS (Video Platform as a Service) allows you to build any video experience or workflow, and to integrate rich video experiences into existing applications, business workflows and environments.
-Kaltura VPaaS eliminates all complexities involved in handling video at scale: ingestion, transcoding, metadata, playback, distribution, analytics, accessibility, monetization, security, search, interactivity and more. `,
+Kaltura VPaaS eliminates all complexities involved in handling video at scale: ingestion, transcoding, metadata, playback, distribution, analytics, accessibility, monetization, security, search, interactivity and more. 
+Available as an open API, with a set of SDKs, developer tools and dozens of code recipes, we’re making the video experience creation process as easy as it gets.`,
 				ProviderDisplayName: "Kaltura Inc.",
 				DocumentationUrl:    "https://developer.kaltura.com",
+				SupportUrl: "https://forum.kaltura.org",
 			},
 			Plans: []brokerapi.ServicePlan{brokerapi.ServicePlan{
 				ID:          "7a5ab921-e501-409e-917b-4cb4aa87a782",
 				Name:        "default",
-				Description: "Kaltura Plan",
+				Description: "Pay As You Go with base REE package. For more details see: https://vpaas.kaltura.com/pricing",
 			}},
 		},
 	}, nil
