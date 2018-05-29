@@ -36,7 +36,7 @@ func (b *KalturaBroker) Services(ctx context.Context) ([]brokerapi.Service, erro
 			Description: "Use Kaltura to create Video Experiences and Workflows in your application",
 			Bindable:    true,
 			Metadata: &brokerapi.ServiceMetadata{
-				DisplayName: "kaltura Video Platform as a Service",
+				DisplayName: "Video Platform as a Service - Kaltura",
 				ImageUrl:    "https://vpaas.kaltura.com/images/VPaaS-logo-full.png",
 				LongDescription: `
 Kaltura VPaaS (Video Platform as a Service) allows you to build any video experience or workflow, and to integrate rich video experiences into existing applications, business workflows and environments.
