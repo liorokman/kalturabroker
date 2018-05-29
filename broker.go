@@ -1,24 +1,15 @@
 package main
 
 import (
-	"bytes"
-	"code.cloudfoundry.org/lager"
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"github.com/cloudfoundry-community/go-cfclient"
-	"github.com/cloudfoundry-community/go-cfenv"
+	"github.com/goji/httpauth"
+	"os"
+
+	"code.cloudfoundry.org/lager"
 	"github.com/gorilla/mux"
 	"github.com/liorokman/brokerapi"
-	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
-	"os"
-	"strconv"
-	"strings"
 )
 
 type KalturaBroker struct {
@@ -58,7 +49,7 @@ func (b *KalturaBroker) Services(ctx context.Context) []brokerapi.Service {
 	}
 	log.Printf("Got a request to retrieve the catalog")
 	planList := []brokerapi.ServicePlan{brokerapi.ServicePlan{
-		ID:          SMALL_ORG_PLAN_UUID,
+		ID:          "an id",
 		Name:        "small-org",
 		Description: "Creates a Small CF Org in CloudFoundry",
 		Schemas: &brokerapi.ServiceSchemas{
@@ -102,14 +93,12 @@ func (b *KalturaBroker) Services(ctx context.Context) []brokerapi.Service {
 
 	return []brokerapi.Service{
 		brokerapi.Service{
-			ID:          ORG_SERVICE_UUID,
+			ID:          "another id",
 			Name:        "CF Org",
 			Description: "Create an Org in CF",
 			Bindable:    false,
-			Metadata: map[string]interface{}{
-				"datacenter": b.Datacenter,
-			},
-			Plans: planList,
+			Metadata:    map[string]interface{}{},
+			Plans:       planList,
 		},
 	}
 }
@@ -173,26 +162,18 @@ func (b *KalturaBroker) LastOperation(ctx context.Context, instanceID, operation
 
 func main() {
 
-	//for _, e := range os.Environ() {
-	//	fmt.Println(e)
-	//}
-
 	router := mux.NewRouter().StrictSlash(true)
-	//Handle dashboard URLs
-	router.HandleFunc("/dashboard/{org-id}", ServeDashBoard)
-
-	// Handle dump and restore
-	router.HandleFunc("/dump", Dump).Methods("GET")
-	router.HandleFunc("/restore", Restore).Methods("POST")
-
-	brokerLogger := lager.NewLogger("cf-org-broker")
-	brokerapi.AttachRoutes(router, cfOrgBroker, brokerLogger)
-
-	log.Printf("Adding the /bindings subrouter")
-	bindingBrokerRoutes := router.PathPrefix("/bindings").Subrouter()
-	brokerapi.AttachRoutes(bindingBrokerRoutes, cfOrgBroker.BindingBroker, brokerLogger)
+	brokerLogger := lager.NewLogger("broker")
+	KalturaBroker := NewKalturaBroker()
+	router.Use(httpauth.SimpleBasicAuth("user", "pass"))
+	brokerapi.AttachRoutes(router, KalturaBroker, brokerLogger)
 
 	//add authentication for broker paths
-	log.Fatal(http.ListenAndServe(":"+cfOrgBroker.AppPort, authenticationMiddleware(&cfOrgBroker.Credentials, &cfOrgBroker.BindingBroker.Credentials, router)))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Fatal(http.ListenAndServe(":"+port, router))
 
 }
