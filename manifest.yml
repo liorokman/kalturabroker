@@ -1,0 +1,6 @@
+---
+applications:
+- name: "kalturabroker"
+  memory: 128M
+  env:
+    GOPACKAGENAME: "github.com/liorokman/kalturabroker"
