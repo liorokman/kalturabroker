@@ -205,7 +205,10 @@ func main() {
 	brokerLogger := lager.NewLogger("broker")
 	KalturaBroker := NewKalturaBroker()
 
-	router.Use(httpauth.SimpleBasicAuth("user", "pass"))
+	brokerUser := os.Getenv("BROKER_USER")
+	brokerPass := os.Getenv("BROKER_PASS")
+
+	router.Use(httpauth.SimpleBasicAuth(brokerUser, brokerPass))
 	brokerapi.AttachRoutes(router, KalturaBroker, brokerLogger)
 
 	//add authentication for broker paths
